@@ -1,0 +1,107 @@
+{% extends 'base.html' %}
+{% block title %}Stock Report — InvMS{% endblock %}
+{% block page_title %}Stock Report{% endblock %}
+
+{% block content %}
+<div class="page-header d-flex align-items-center justify-content-between flex-wrap gap-2">
+  <div>
+    <h4><i class="fas fa-warehouse me-2 text-primary"></i>Stock Report</h4>
+    <nav aria-label="breadcrumb"><ol class="breadcrumb"><li class="breadcrumb-item"><a href="{{ url_for('dashboard.index') }}">Dashboard</a></li><li class="breadcrumb-item active">Stocks</li></ol></nav>
+  </div>
+  <div class="d-flex gap-2 no-print">
+    <button class="btn btn-sm btn-outline-secondary" onclick="window.print()"><i class="fas fa-print me-1"></i>Print</button>
+    <a href="{{ url_for('exports.stocks_excel') }}" class="btn btn-sm btn-outline-success"><i class="fas fa-file-excel me-1"></i>Excel</a>
+  </div>
+</div>
+
+<!-- Filters -->
+<div class="filters-bar mb-3 no-print">
+  <form method="GET" class="row g-2 align-items-end">
+    <div class="col-auto">
+      <label class="form-label fw-semibold mb-1" style="font-size:12px">Category</label>
+      <select name="category_id" class="form-select form-select-sm" style="min-width:160px">
+        <option value="">All Categories</option>
+        {% for cat in categories %}
+        <option value="{{ cat.id }}" {% if cat_id|string == cat.id|string %}selected{% endif %}>{{ cat.category_name }}</option>
+        {% endfor %}
+      </select>
+    </div>
+    <div class="col-auto">
+      <label class="form-label fw-semibold mb-1" style="font-size:12px">Sub-Category</label>
+      <select name="subcategory_id" class="form-select form-select-sm" style="min-width:160px">
+        <option value="">All Sub-Categories</option>
+        {% for sc in subcategories %}
+        <option value="{{ sc.id }}" {% if subcat_id|string == sc.id|string %}selected{% endif %}>{{ sc.subcategory_name }}</option>
+        {% endfor %}
+      </select>
+    </div>
+    <div class="col-auto">
+      <label class="form-label fw-semibold mb-1" style="font-size:12px">Stock Level</label>
+      <select name="stock_filter" class="form-select form-select-sm">
+        <option value="all" {% if stock_filter=='all' %}selected{% endif %}>All</option>
+        <option value="low" {% if stock_filter=='low' %}selected{% endif %}>Low / At Minimum</option>
+        <option value="out" {% if stock_filter=='out' %}selected{% endif %}>Out of Stock</option>
+      </select>
+    </div>
+    <div class="col-auto">
+      <label class="form-label fw-semibold mb-1" style="font-size:12px">Search</label>
+      <input type="text" name="q" value="{{ q }}" class="form-control form-control-sm" placeholder="Item name…" style="width:180px">
+    </div>
+    <div class="col-auto d-flex gap-2">
+      <button type="submit" class="btn btn-primary btn-sm"><i class="fas fa-filter me-1"></i>Filter</button>
+      <a href="{{ url_for('stocks.index') }}" class="btn btn-outline-secondary btn-sm"><i class="fas fa-rotate-left me-1"></i>Reset</a>
+    </div>
+  </form>
+</div>
+
+<!-- Summary -->
+<div class="d-flex gap-2 mb-3 flex-wrap no-print">
+  {% set out_of_stock = items | selectattr('current_stock', 'equalto', 0) | list | length %}
+  {% set low_stock = items | selectattr('is_low_stock') | list | length %}
+  <span class="badge bg-secondary fs-6 px-3 py-2">Total Items: {{ items|length }}</span>
+  <span class="badge bg-danger fs-6 px-3 py-2">Out of Stock: {{ out_of_stock }}</span>
+  <span class="badge bg-warning text-dark fs-6 px-3 py-2">Low Stock: {{ low_stock }}</span>
+  <span class="badge bg-success fs-6 px-3 py-2">Adequate: {{ items|length - low_stock }}</span>
+</div>
+
+<div class="table-card">
+  <div class="card-header">
+    <h6 class="card-title mb-0"><i class="fas fa-list me-2"></i>Stock Levels</h6>
+  </div>
+  <div class="table-responsive">
+    <table class="table inv-table mb-0">
+      <thead><tr><th>#</th><th>Item Name</th><th>Category</th><th>Sub-Category</th><th>Brand</th><th>Model</th><th>Serial No</th><th class="text-center">Current Stock</th><th class="text-center">Min Order Qty</th><th>Status</th></tr></thead>
+      <tbody>
+        {% for it in items %}
+        <tr class="{% if it.current_stock == 0 %}table-danger{% elif it.is_low_stock %}table-warning{% endif %}">
+          <td>{{ loop.index }}</td>
+          <td><strong>{{ it.item_name }}</strong></td>
+          <td>{{ it.category.category_name if it.category else '—' }}</td>
+          <td>{{ it.subcategory.subcategory_name if it.subcategory else '—' }}</td>
+          <td>{{ it.brand.brand_name if it.brand else '—' }}</td>
+          <td>{{ it.model_name or '—' }}</td>
+          <td><code style="font-size:11px">{{ it.serial_no or '—' }}</code></td>
+          <td class="text-center">
+            <span class="badge fs-6 {% if it.current_stock == 0 %}bg-danger{% elif it.is_low_stock %}bg-warning text-dark{% else %}bg-success{% endif %}">
+              {{ it.current_stock }}
+            </span>
+          </td>
+          <td class="text-center">{{ it.minimum_stock_level }}</td>
+          <td>
+            {% if it.current_stock == 0 %}
+              <span class="badge bg-danger"><i class="fas fa-xmark me-1"></i>Out of Stock</span>
+            {% elif it.is_low_stock %}
+              <span class="badge bg-warning text-dark"><i class="fas fa-triangle-exclamation me-1"></i>Low Stock</span>
+            {% else %}
+              <span class="badge bg-success"><i class="fas fa-check me-1"></i>OK</span>
+            {% endif %}
+          </td>
+        </tr>
+        {% else %}
+        <tr><td colspan="10" class="text-center text-muted py-4"><i class="fas fa-warehouse fa-2x mb-2 d-block opacity-25"></i>No stock records match your filters.</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endblock %}

@@ -1,0 +1,78 @@
+{% extends 'base.html' %}
+{% block title %}Brands — InvMS{% endblock %}
+{% block page_title %}Masters / Brands{% endblock %}
+
+{% block content %}
+<div class="page-header d-flex align-items-center justify-content-between">
+  <div>
+    <h4><i class="fas fa-trademark me-2 text-primary"></i>Brands</h4>
+    <nav aria-label="breadcrumb"><ol class="breadcrumb"><li class="breadcrumb-item"><a href="{{ url_for('dashboard.index') }}">Dashboard</a></li><li class="breadcrumb-item active">Brands</li></ol></nav>
+  </div>
+  <button class="btn btn-success btn-sm" data-bs-toggle="modal" data-bs-target="#addModal"><i class="fas fa-plus me-1"></i>Add Brand</button>
+</div>
+
+<div class="table-card">
+  <div class="card-header d-flex align-items-center justify-content-between flex-wrap gap-2">
+    <h6 class="card-title mb-0">Brand List</h6>
+    <form class="d-flex gap-2" method="GET">
+      <input type="text" name="q" value="{{ q }}" class="form-control form-control-sm" placeholder="Search brands…" style="width:220px">
+      <button class="btn btn-outline-secondary btn-sm"><i class="fas fa-search"></i></button>
+      {% if q %}<a href="{{ url_for('masters.brands') }}" class="btn btn-outline-danger btn-sm"><i class="fas fa-times"></i></a>{% endif %}
+    </form>
+  </div>
+  <div class="table-responsive">
+    <table class="table inv-table mb-0">
+      <thead><tr><th>#</th><th>Brand Name</th><th>Items</th><th>Created</th><th class="text-center no-print">Actions</th></tr></thead>
+      <tbody>
+        {% for brand in brands %}
+        <tr>
+          <td>{{ loop.index }}</td>
+          <td><strong>{{ brand.brand_name }}</strong></td>
+          <td><span class="badge bg-secondary">{{ brand.items|length }}</span></td>
+          <td>{{ brand.created_at.strftime('%d %b %Y') }}</td>
+          <td class="text-center no-print">
+            <button class="btn btn-sm btn-primary" data-bs-toggle="modal" data-bs-target="#editModal{{ brand.id }}"><i class="fas fa-pencil"></i></button>
+            <form method="POST" action="{{ url_for('masters.delete_brand', id=brand.id) }}" class="d-inline" onsubmit="return confirm('Delete this brand?')">
+              <button class="btn btn-sm btn-danger"><i class="fas fa-trash"></i></button>
+            </form>
+          </td>
+        </tr>
+        <div class="modal fade" id="editModal{{ brand.id }}" tabindex="-1">
+          <div class="modal-dialog"><div class="modal-content">
+            <div class="modal-header"><h5 class="modal-title">Edit Brand</h5><button type="button" class="btn-close" data-bs-dismiss="modal"></button></div>
+            <form method="POST" action="{{ url_for('masters.edit_brand', id=brand.id) }}">
+              <div class="modal-body">
+                <label class="form-label fw-semibold">Brand Name</label>
+                <input type="text" name="brand_name" class="form-control" value="{{ brand.brand_name }}" required>
+              </div>
+              <div class="modal-footer">
+                <button type="button" class="btn btn-secondary btn-sm" data-bs-dismiss="modal">Cancel</button>
+                <button type="submit" class="btn btn-primary btn-sm"><i class="fas fa-save me-1"></i>Save</button>
+              </div>
+            </form>
+          </div></div>
+        </div>
+        {% else %}
+        <tr><td colspan="5" class="text-center text-muted py-4">No brands found.</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<div class="modal fade" id="addModal" tabindex="-1">
+  <div class="modal-dialog"><div class="modal-content">
+    <div class="modal-header"><h5 class="modal-title"><i class="fas fa-plus me-2"></i>Add Brand</h5><button type="button" class="btn-close" data-bs-dismiss="modal"></button></div>
+    <form method="POST" action="{{ url_for('masters.add_brand') }}">
+      <div class="modal-body">
+        <label class="form-label fw-semibold">Brand Name <span class="text-danger">*</span></label>
+        <input type="text" name="brand_name" class="form-control" placeholder="e.g. Dell, HP, Canon" required>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary btn-sm" data-bs-dismiss="modal">Close</button>
+        <button type="submit" class="btn btn-success btn-sm"><i class="fas fa-plus me-1"></i>Add Brand</button>
+      </div>
+    </form>
+  </div></div>
+</div>
+{% endblock %}

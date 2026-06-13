@@ -1,0 +1,149 @@
+{% extends 'base.html' %}
+{% set report_sub = 'vendor' %}
+{% block title %}{{ vendor.vendor_name }} — Vendor History{% endblock %}
+{% block page_title %}Vendor History{% endblock %}
+
+{% block content %}
+<div class="page-header d-flex align-items-center justify-content-between flex-wrap gap-2">
+  <div>
+    <h4><i class="fas fa-building me-2 text-success"></i>{{ vendor.vendor_name }}</h4>
+    <nav aria-label="breadcrumb"><ol class="breadcrumb">
+      <li class="breadcrumb-item"><a href="{{ url_for('dashboard.index') }}">Dashboard</a></li>
+      <li class="breadcrumb-item"><a href="{{ url_for('reports.vendor_history') }}">Vendor History</a></li>
+      <li class="breadcrumb-item active">{{ vendor.vendor_name }}</li>
+    </ol></nav>
+  </div>
+  <div class="d-flex gap-2 no-print">
+    <button class="btn btn-sm btn-outline-secondary" onclick="window.print()"><i class="fas fa-print me-1"></i>Print</button>
+  </div>
+</div>
+
+<!-- Vendor Info Card -->
+<div class="card border-0 shadow-sm mb-4 p-3" style="background:linear-gradient(135deg,#1e2a38,#27ae60); color:#fff">
+  <div class="row g-2">
+    <div class="col-md-4">
+      <div style="font-size:11px; opacity:.7; text-transform:uppercase; letter-spacing:.5px">Vendor Name</div>
+      <div class="fw-bold">{{ vendor.vendor_name }}</div>
+    </div>
+    <div class="col-md-3">
+      <div style="font-size:11px; opacity:.7; text-transform:uppercase; letter-spacing:.5px">Phone</div>
+      <div>{{ vendor.mobile or '—' }}</div>
+    </div>
+    <div class="col-md-3">
+      <div style="font-size:11px; opacity:.7; text-transform:uppercase; letter-spacing:.5px">Address</div>
+      <div>{{ vendor.address or '—' }}</div>
+    </div>
+    <div class="col-md-2">
+      <div style="font-size:11px; opacity:.7; text-transform:uppercase; letter-spacing:.5px">Last Purchase</div>
+      <div>{{ last_date.strftime('%d %b %Y') if last_date else '—' }}</div>
+    </div>
+  </div>
+</div>
+
+<!-- Summary Cards -->
+<div class="row g-3 mb-4">
+  <div class="col-md-4">
+    <div class="card border-0 shadow-sm text-center p-3" style="background:linear-gradient(135deg,#2980b9,#1a6fa0); color:#fff">
+      <div class="fw-bold fs-2">{{ masters|length }}</div>
+      <div style="font-size:12.5px; opacity:.9">Total Transactions</div>
+    </div>
+  </div>
+  <div class="col-md-4">
+    <div class="card border-0 shadow-sm text-center p-3" style="background:linear-gradient(135deg,#27ae60,#1e8449); color:#fff">
+      <div class="fw-bold fs-2">{{ total_qty }}</div>
+      <div style="font-size:12.5px; opacity:.9">Total Qty Purchased</div>
+    </div>
+  </div>
+  <div class="col-md-4">
+    <div class="card border-0 shadow-sm text-center p-3" style="background:linear-gradient(135deg,#8e44ad,#7d3c98); color:#fff">
+      <div class="fw-bold fs-2">{{ '%.2f'|format(total_amount) }}</div>
+      <div style="font-size:12.5px; opacity:.9">Total Amount Spent</div>
+    </div>
+  </div>
+</div>
+
+<!-- Filters -->
+<div class="filters-bar mb-3 no-print">
+  <form method="GET" class="row g-2 align-items-end">
+    <div class="col-md-3">
+      <label class="form-label mb-1" style="font-size:12px; font-weight:600">Category</label>
+      <select name="category_id" class="form-select form-select-sm">
+        <option value="">All Categories</option>
+        {% for c in categories %}<option value="{{ c.id }}" {% if category_id == c.id|string %}selected{% endif %}>{{ c.category_name }}</option>{% endfor %}
+      </select>
+    </div>
+    <div class="col-md-3">
+      <label class="form-label mb-1" style="font-size:12px; font-weight:600">From Date</label>
+      <input type="date" name="from_date" value="{{ from_date }}" class="form-control form-control-sm">
+    </div>
+    <div class="col-md-3">
+      <label class="form-label mb-1" style="font-size:12px; font-weight:600">To Date</label>
+      <input type="date" name="to_date" value="{{ to_date }}" class="form-control form-control-sm">
+    </div>
+    <div class="col-md-3 d-flex gap-1">
+      <button class="btn btn-primary btn-sm flex-grow-1"><i class="fas fa-filter me-1"></i>Filter</button>
+      <a href="{{ url_for('reports.vendor_detail', vendor_id=vendor.id) }}" class="btn btn-outline-secondary btn-sm"><i class="fas fa-times"></i></a>
+    </div>
+  </form>
+</div>
+
+<div class="row g-3">
+  <!-- Item-wise Summary -->
+  <div class="col-lg-4">
+    <div class="table-card">
+      <div class="card-header">
+        <h6 class="card-title mb-0"><i class="fas fa-box me-2"></i>Item-wise Summary</h6>
+      </div>
+      <div class="table-responsive">
+        <table class="table inv-table mb-0">
+          <thead><tr><th>Item</th><th>Qty</th><th>Amount</th></tr></thead>
+          <tbody>
+            {% for s in item_summary %}
+            <tr>
+              <td style="font-size:12px">{{ s.item.item_name if s.item else '?' }}</td>
+              <td><span class="badge bg-success">{{ s.total_qty }}</span></td>
+              <td style="font-size:12px">{{ '%.2f'|format(s.total_amount) }}</td>
+            </tr>
+            {% else %}
+            <tr><td colspan="3" class="text-center text-muted py-3">No items</td></tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <!-- Transaction History -->
+  <div class="col-lg-8">
+    <div class="table-card">
+      <div class="card-header">
+        <h6 class="card-title mb-0"><i class="fas fa-history me-2"></i>Purchase History ({{ masters|length }})</h6>
+      </div>
+      <div class="table-responsive">
+        <table class="table inv-table mb-0">
+          <thead><tr><th>Txn ID</th><th>Date</th><th>RV No</th><th>Items from this Vendor</th><th>Qty</th><th>Amount</th></tr></thead>
+          <tbody>
+            {% for entry in masters %}
+            {% set m = entry.master %}
+            <tr>
+              <td><span class="badge bg-success">{{ m.transaction_id }}</span></td>
+              <td>{{ m.purchase_date.strftime('%d %b %Y') if m.purchase_date else '—' }}</td>
+              <td>{{ m.rv_no or '—' }}</td>
+              <td>
+                {% for pi in entry.items %}
+                <div class="small"><i class="fas fa-box text-muted me-1"></i>{{ pi.item.item_name if pi.item else '?' }} &times;{{ pi.quantity }}</div>
+                {% endfor %}
+              </td>
+              <td><span class="badge bg-primary">{{ entry.items | sum(attribute='quantity') }}</span></td>
+              <td><strong>{{ '%.2f'|format(entry.items | sum(attribute='total_amount') | float) }}</strong></td>
+            </tr>
+            {% else %}
+            <tr><td colspan="6" class="text-center text-muted py-3">No purchases found.</td></tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

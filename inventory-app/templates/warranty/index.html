@@ -1,0 +1,106 @@
+{% extends 'base.html' %}
+{% block title %}Warranty Report — InvMS{% endblock %}
+{% block page_title %}Warranty Report{% endblock %}
+
+{% block content %}
+<div class="page-header d-flex align-items-center justify-content-between flex-wrap gap-2">
+  <div>
+    <h4><i class="fas fa-shield-halved me-2 text-primary"></i>Warranty Report</h4>
+    <nav aria-label="breadcrumb"><ol class="breadcrumb"><li class="breadcrumb-item"><a href="{{ url_for('dashboard.index') }}">Dashboard</a></li><li class="breadcrumb-item active">Warranty</li></ol></nav>
+  </div>
+  <div class="d-flex gap-2 no-print">
+    <button class="btn btn-sm btn-outline-secondary" onclick="window.print()"><i class="fas fa-print me-1"></i>Print</button>
+    <a href="{{ url_for('exports.warranty_excel') }}" class="btn btn-sm btn-outline-success"><i class="fas fa-file-excel me-1"></i>Excel</a>
+  </div>
+</div>
+
+<!-- Filters -->
+<div class="filters-bar mb-3 no-print">
+  <form method="GET" class="row g-2 align-items-end">
+    <div class="col-auto">
+      <label class="form-label fw-semibold mb-1" style="font-size:12px">Category</label>
+      <select name="category_id" class="form-select form-select-sm" style="min-width:160px">
+        <option value="">All Categories</option>
+        {% for cat in categories %}
+        <option value="{{ cat.id }}" {% if cat_id|string == cat.id|string %}selected{% endif %}>{{ cat.category_name }}</option>
+        {% endfor %}
+      </select>
+    </div>
+    <div class="col-auto">
+      <label class="form-label fw-semibold mb-1" style="font-size:12px">Sub-Category</label>
+      <select name="subcategory_id" class="form-select form-select-sm" style="min-width:160px">
+        <option value="">All Sub-Categories</option>
+        {% for sc in subcategories %}
+        <option value="{{ sc.id }}" {% if subcat_id|string == sc.id|string %}selected{% endif %}>{{ sc.subcategory_name }}</option>
+        {% endfor %}
+      </select>
+    </div>
+    <div class="col-auto">
+      <label class="form-label fw-semibold mb-1" style="font-size:12px">Status</label>
+      <select name="expiry_filter" class="form-select form-select-sm">
+        <option value="all" {% if expiry_filter=='all' %}selected{% endif %}>All</option>
+        <option value="active" {% if expiry_filter=='active' %}selected{% endif %}>Active</option>
+        <option value="expired" {% if expiry_filter=='expired' %}selected{% endif %}>Expired</option>
+      </select>
+    </div>
+    <div class="col-auto">
+      <label class="form-label fw-semibold mb-1" style="font-size:12px">Search</label>
+      <input type="text" name="q" value="{{ q }}" class="form-control form-control-sm" placeholder="Item name…" style="width:180px">
+    </div>
+    <div class="col-auto d-flex gap-2">
+      <button type="submit" class="btn btn-primary btn-sm"><i class="fas fa-filter me-1"></i>Filter</button>
+      <a href="{{ url_for('warranty.index') }}" class="btn btn-outline-secondary btn-sm"><i class="fas fa-rotate-left me-1"></i>Reset</a>
+    </div>
+  </form>
+</div>
+
+<!-- Summary badges -->
+<div class="d-flex gap-2 mb-3 no-print flex-wrap">
+  <span class="badge bg-secondary fs-6 px-3 py-2">Total: {{ items|length }}</span>
+  <span class="badge bg-danger fs-6 px-3 py-2">Expired: {{ items | selectattr('is_warranty_expired') | list | length }}</span>
+  <span class="badge bg-success fs-6 px-3 py-2">Active: {{ items | rejectattr('is_warranty_expired') | list | length }}</span>
+</div>
+
+<div class="table-card">
+  <div class="card-header">
+    <h6 class="card-title mb-0"><i class="fas fa-list me-2"></i>Warranty Records</h6>
+  </div>
+  <div class="table-responsive">
+    <table class="table inv-table mb-0">
+      <thead><tr><th>#</th><th>Item Name</th><th>Category</th><th>Sub-Category</th><th>Brand</th><th>Model</th><th>Serial No</th><th>Warranty Expiry</th><th>Status</th></tr></thead>
+      <tbody>
+        {% for it in items %}
+        <tr>
+          <td>{{ loop.index }}</td>
+          <td><strong>{{ it.item_name }}</strong></td>
+          <td>{{ it.category.category_name if it.category else '—' }}</td>
+          <td>{{ it.subcategory.subcategory_name if it.subcategory else '—' }}</td>
+          <td>{{ it.brand.brand_name if it.brand else '—' }}</td>
+          <td>{{ it.model_name or '—' }}</td>
+          <td><code style="font-size:11px">{{ it.serial_no or '—' }}</code></td>
+          <td>
+            {% if it.warranty_expiry_date %}
+              <span class="fw-semibold {% if it.is_warranty_expired %}text-danger{% else %}text-success{% endif %}">
+                {{ it.warranty_expiry_date.strftime('%d %b %Y') }}
+              </span>
+              {% if not it.is_warranty_expired %}
+                <br><small class="text-muted">{{ (it.warranty_expiry_date - today).days }} days left</small>
+              {% endif %}
+            {% else %}—{% endif %}
+          </td>
+          <td>
+            {% if it.is_warranty_expired %}
+              <span class="badge bg-danger">Expired</span>
+            {% else %}
+              <span class="badge bg-success">Active</span>
+            {% endif %}
+          </td>
+        </tr>
+        {% else %}
+        <tr><td colspan="9" class="text-center text-muted py-4"><i class="fas fa-shield-halved fa-2x mb-2 d-block opacity-25"></i>No warranty records match your filters.</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endblock %}

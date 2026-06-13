@@ -1,0 +1,83 @@
+{% extends 'base.html' %}
+{% block title %}Categories — InvMS{% endblock %}
+{% block page_title %}Masters / Categories{% endblock %}
+
+{% block content %}
+<div class="page-header d-flex align-items-center justify-content-between">
+  <div>
+    <h4><i class="fas fa-tags me-2 text-primary"></i>Categories</h4>
+    <nav aria-label="breadcrumb"><ol class="breadcrumb"><li class="breadcrumb-item"><a href="{{ url_for('dashboard.index') }}">Dashboard</a></li><li class="breadcrumb-item active">Categories</li></ol></nav>
+  </div>
+  <button class="btn btn-success btn-sm" data-bs-toggle="modal" data-bs-target="#addModal">
+    <i class="fas fa-plus me-1"></i>Add Category
+  </button>
+</div>
+
+<div class="table-card">
+  <div class="card-header d-flex align-items-center justify-content-between flex-wrap gap-2">
+    <h6 class="card-title mb-0"><i class="fas fa-list me-2"></i>Category List</h6>
+    <form class="d-flex gap-2" method="GET">
+      <input type="text" name="q" value="{{ q }}" class="form-control form-control-sm" placeholder="Search categories…" style="width:220px">
+      <button class="btn btn-outline-secondary btn-sm"><i class="fas fa-search"></i></button>
+      {% if q %}<a href="{{ url_for('masters.categories') }}" class="btn btn-outline-danger btn-sm"><i class="fas fa-times"></i></a>{% endif %}
+    </form>
+  </div>
+  <div class="table-responsive">
+    <table class="table inv-table mb-0">
+      <thead><tr><th width="60">#</th><th>Category Name</th><th>Sub-Categories</th><th>Items</th><th>Created</th><th width="130" class="text-center no-print">Actions</th></tr></thead>
+      <tbody>
+        {% for cat in categories %}
+        <tr>
+          <td>{{ loop.index }}</td>
+          <td><strong>{{ cat.category_name }}</strong></td>
+          <td><span class="badge bg-info text-dark">{{ cat.subcategories|length }}</span></td>
+          <td><span class="badge bg-secondary">{{ cat.items|length }}</span></td>
+          <td>{{ cat.created_at.strftime('%d %b %Y') }}</td>
+          <td class="text-center no-print">
+            <button class="btn btn-sm btn-primary" data-bs-toggle="modal" data-bs-target="#editModal{{ cat.id }}" title="Edit"><i class="fas fa-pencil"></i></button>
+            <form method="POST" action="{{ url_for('masters.delete_category', id=cat.id) }}" class="d-inline" onsubmit="return confirm('Delete this category and all its sub-categories?')">
+              <button class="btn btn-sm btn-danger" title="Delete"><i class="fas fa-trash"></i></button>
+            </form>
+          </td>
+        </tr>
+        <!-- Edit Modal -->
+        <div class="modal fade" id="editModal{{ cat.id }}" tabindex="-1">
+          <div class="modal-dialog"><div class="modal-content">
+            <div class="modal-header"><h5 class="modal-title">Edit Category</h5><button type="button" class="btn-close" data-bs-dismiss="modal"></button></div>
+            <form method="POST" action="{{ url_for('masters.edit_category', id=cat.id) }}">
+              <div class="modal-body">
+                <label class="form-label fw-semibold">Category Name</label>
+                <input type="text" name="category_name" class="form-control" value="{{ cat.category_name }}" required>
+              </div>
+              <div class="modal-footer">
+                <button type="button" class="btn btn-secondary btn-sm" data-bs-dismiss="modal">Cancel</button>
+                <button type="submit" class="btn btn-primary btn-sm"><i class="fas fa-save me-1"></i>Save</button>
+              </div>
+            </form>
+          </div></div>
+        </div>
+        {% else %}
+        <tr><td colspan="6" class="text-center text-muted py-4"><i class="fas fa-inbox fa-2x mb-2 d-block opacity-25"></i>No categories found.</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<!-- Add Modal -->
+<div class="modal fade" id="addModal" tabindex="-1">
+  <div class="modal-dialog"><div class="modal-content">
+    <div class="modal-header"><h5 class="modal-title"><i class="fas fa-plus me-2"></i>Add Category</h5><button type="button" class="btn-close" data-bs-dismiss="modal"></button></div>
+    <form method="POST" action="{{ url_for('masters.add_category') }}">
+      <div class="modal-body">
+        <label class="form-label fw-semibold">Category Name <span class="text-danger">*</span></label>
+        <input type="text" name="category_name" class="form-control" placeholder="e.g. IT Equipment" required autofocus>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary btn-sm" data-bs-dismiss="modal">Close</button>
+        <button type="submit" class="btn btn-success btn-sm"><i class="fas fa-plus me-1"></i>Add Category</button>
+      </div>
+    </form>
+  </div></div>
+</div>
+{% endblock %}

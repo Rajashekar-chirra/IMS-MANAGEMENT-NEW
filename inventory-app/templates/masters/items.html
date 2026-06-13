@@ -1,0 +1,96 @@
+{% extends 'base.html' %}
+{% block title %}Items — InvMS{% endblock %}
+{% block page_title %}Masters / Items{% endblock %}
+
+{% block content %}
+<div class="page-header d-flex align-items-center justify-content-between">
+  <div>
+    <h4><i class="fas fa-box me-2 text-primary"></i>Items</h4>
+    <nav aria-label="breadcrumb"><ol class="breadcrumb"><li class="breadcrumb-item"><a href="{{ url_for('dashboard.index') }}">Dashboard</a></li><li class="breadcrumb-item active">Items</li></ol></nav>
+  </div>
+  <button class="btn btn-success btn-sm" data-bs-toggle="modal" data-bs-target="#addModal"><i class="fas fa-plus me-1"></i>Add Item</button>
+</div>
+
+<div class="table-card">
+  <div class="card-header d-flex align-items-center justify-content-between flex-wrap gap-2">
+    <h6 class="card-title mb-0">Item List ({{ items|length }} records)</h6>
+    <form class="d-flex gap-2" method="GET">
+      <input type="text" name="q" value="{{ q }}" class="form-control form-control-sm" placeholder="Search items…" style="width:220px">
+      <button class="btn btn-outline-secondary btn-sm"><i class="fas fa-search"></i></button>
+      {% if q %}<a href="{{ url_for('masters.items') }}" class="btn btn-outline-danger btn-sm"><i class="fas fa-times"></i></a>{% endif %}
+    </form>
+  </div>
+  <div class="table-responsive">
+    <table class="table inv-table mb-0">
+      <thead><tr><th>#</th><th>Item Name</th><th>Category</th><th>Sub-Cat</th><th>Brand</th><th>Model</th><th>Serial No</th><th>Min Stock</th><th>Cur. Stock</th><th>Warranty</th><th class="no-print">Actions</th></tr></thead>
+      <tbody>
+        {% for it in items %}
+        <tr class="{% if it.current_stock <= it.minimum_stock_level %}table-warning{% endif %}">
+          <td>{{ loop.index }}</td>
+          <td><strong>{{ it.item_name }}</strong></td>
+          <td>{{ it.category.category_name if it.category else '—' }}</td>
+          <td>{{ it.subcategory.subcategory_name if it.subcategory else '—' }}</td>
+          <td>{{ it.brand.brand_name if it.brand else '—' }}</td>
+          <td>{{ it.model_name or '—' }}</td>
+          <td><code>{{ it.serial_no or '—' }}</code></td>
+          <td class="text-center">{{ it.minimum_stock_level }}</td>
+          <td class="text-center"><span class="badge {% if it.current_stock == 0 %}bg-danger{% elif it.is_low_stock %}bg-warning text-dark{% else %}bg-success{% endif %}">{{ it.current_stock }}</span></td>
+          <td>
+            {% if it.warranty_expiry_date %}
+              <span class="badge {% if it.is_warranty_expired %}bg-danger{% else %}bg-success{% endif %}">
+                {{ it.warranty_expiry_date.strftime('%d %b %Y') }}
+              </span>
+            {% else %}—{% endif %}
+          </td>
+          <td class="no-print">
+            <button class="btn btn-sm btn-primary" data-bs-toggle="modal" data-bs-target="#editModal{{ it.id }}"><i class="fas fa-pencil"></i></button>
+            <form method="POST" action="{{ url_for('masters.delete_item', id=it.id) }}" class="d-inline" onsubmit="return confirm('Delete this item?')">
+              <button class="btn btn-sm btn-danger"><i class="fas fa-trash"></i></button>
+            </form>
+          </td>
+        </tr>
+        <div class="modal fade" id="editModal{{ it.id }}" tabindex="-1">
+          <div class="modal-dialog modal-lg"><div class="modal-content">
+            <div class="modal-header"><h5 class="modal-title">Edit Item</h5><button type="button" class="btn-close" data-bs-dismiss="modal"></button></div>
+            <form method="POST" action="{{ url_for('masters.edit_item', id=it.id) }}">
+              <div class="modal-body row g-3">
+                <div class="col-md-8"><label class="form-label fw-semibold">Item Name</label><input type="text" name="item_name" class="form-control" value="{{ it.item_name }}" required></div>
+                <div class="col-md-4"><label class="form-label fw-semibold">Model</label><input type="text" name="model_name" class="form-control" value="{{ it.model_name or '' }}"></div>
+                <div class="col-md-4"><label class="form-label fw-semibold">Category</label><select name="category_id" class="form-select" required>{% for c in categories %}<option value="{{ c.id }}" {% if c.id==it.category_id %}selected{% endif %}>{{ c.category_name }}</option>{% endfor %}</select></div>
+                <div class="col-md-4"><label class="form-label fw-semibold">Sub-Category</label><select name="subcategory_id" class="form-select"><option value="">—</option>{% for sc in subcategories %}<option value="{{ sc.id }}" {% if sc.id==it.subcategory_id %}selected{% endif %}>{{ sc.subcategory_name }}</option>{% endfor %}</select></div>
+                <div class="col-md-4"><label class="form-label fw-semibold">Brand</label><select name="brand_id" class="form-select"><option value="">—</option>{% for b in brands %}<option value="{{ b.id }}" {% if b.id==it.brand_id %}selected{% endif %}>{{ b.brand_name }}</option>{% endfor %}</select></div>
+                <div class="col-md-6"><label class="form-label fw-semibold">Serial No</label><input type="text" name="serial_no" class="form-control" value="{{ it.serial_no or '' }}"></div>
+                <div class="col-md-3"><label class="form-label fw-semibold">Min Stock Level</label><input type="number" name="minimum_stock_level" class="form-control" value="{{ it.minimum_stock_level }}" min="0"></div>
+                <div class="col-md-3"><label class="form-label fw-semibold">Warranty Expiry</label><input type="date" name="warranty_expiry_date" class="form-control" value="{{ it.warranty_expiry_date.isoformat() if it.warranty_expiry_date else '' }}"></div>
+              </div>
+              <div class="modal-footer"><button type="button" class="btn btn-secondary btn-sm" data-bs-dismiss="modal">Cancel</button><button type="submit" class="btn btn-primary btn-sm"><i class="fas fa-save me-1"></i>Save</button></div>
+            </form>
+          </div></div>
+        </div>
+        {% else %}
+        <tr><td colspan="11" class="text-center text-muted py-4">No items found.</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<div class="modal fade" id="addModal" tabindex="-1">
+  <div class="modal-dialog modal-lg"><div class="modal-content">
+    <div class="modal-header"><h5 class="modal-title"><i class="fas fa-plus me-2"></i>Add Item</h5><button type="button" class="btn-close" data-bs-dismiss="modal"></button></div>
+    <form method="POST" action="{{ url_for('masters.add_item') }}">
+      <div class="modal-body row g-3">
+        <div class="col-md-8"><label class="form-label fw-semibold">Item Name <span class="text-danger">*</span></label><input type="text" name="item_name" class="form-control" required></div>
+        <div class="col-md-4"><label class="form-label fw-semibold">Model Name</label><input type="text" name="model_name" class="form-control"></div>
+        <div class="col-md-4"><label class="form-label fw-semibold">Category <span class="text-danger">*</span></label><select name="category_id" class="form-select" required><option value="">-- Select --</option>{% for c in categories %}<option value="{{ c.id }}">{{ c.category_name }}</option>{% endfor %}</select></div>
+        <div class="col-md-4"><label class="form-label fw-semibold">Sub-Category</label><select name="subcategory_id" class="form-select"><option value="">—</option>{% for sc in subcategories %}<option value="{{ sc.id }}">{{ sc.subcategory_name }}</option>{% endfor %}</select></div>
+        <div class="col-md-4"><label class="form-label fw-semibold">Brand</label><select name="brand_id" class="form-select"><option value="">—</option>{% for b in brands %}<option value="{{ b.id }}">{{ b.brand_name }}</option>{% endfor %}</select></div>
+        <div class="col-md-6"><label class="form-label fw-semibold">Serial No</label><input type="text" name="serial_no" class="form-control" placeholder="Unique serial number"></div>
+        <div class="col-md-3"><label class="form-label fw-semibold">Min Stock Level</label><input type="number" name="minimum_stock_level" class="form-control" value="0" min="0"></div>
+        <div class="col-md-3"><label class="form-label fw-semibold">Warranty Expiry</label><input type="date" name="warranty_expiry_date" class="form-control"></div>
+      </div>
+      <div class="modal-footer"><button type="button" class="btn btn-secondary btn-sm" data-bs-dismiss="modal">Close</button><button type="submit" class="btn btn-success btn-sm"><i class="fas fa-plus me-1"></i>Add Item</button></div>
+    </form>
+  </div></div>
+</div>
+{% endblock %}

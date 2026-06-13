@@ -1,0 +1,112 @@
+{% extends 'base.html' %}
+{% set report_sub = 'distributor' %}
+{% block title %}Distributor History — InvMS{% endblock %}
+{% block page_title %}Distributor History{% endblock %}
+
+{% block content %}
+<div class="page-header d-flex align-items-center justify-content-between flex-wrap gap-2">
+  <div>
+    <h4><i class="fas fa-users me-2 text-primary"></i>Distributor History</h4>
+    <nav aria-label="breadcrumb"><ol class="breadcrumb">
+      <li class="breadcrumb-item"><a href="{{ url_for('dashboard.index') }}">Dashboard</a></li>
+      <li class="breadcrumb-item active">Distributor History</li>
+    </ol></nav>
+  </div>
+  <div class="d-flex gap-2 no-print">
+    <button class="btn btn-sm btn-outline-secondary" onclick="window.print()"><i class="fas fa-print me-1"></i>Print</button>
+  </div>
+</div>
+
+<!-- Search Filters -->
+<div class="filters-bar mb-3 no-print">
+  <form method="GET" class="row g-2 align-items-end">
+    <div class="col-md-4">
+      <label class="form-label mb-1" style="font-size:12px; font-weight:600">Search by Name / Employee ID / Phone</label>
+      <input type="text" name="q" value="{{ q }}" class="form-control form-control-sm" placeholder="e.g. Ahmed, EMP-001, 055…">
+    </div>
+    <div class="col-md-3">
+      <label class="form-label mb-1" style="font-size:12px; font-weight:600">From Date</label>
+      <input type="date" name="from_date" value="{{ from_date }}" class="form-control form-control-sm">
+    </div>
+    <div class="col-md-3">
+      <label class="form-label mb-1" style="font-size:12px; font-weight:600">To Date</label>
+      <input type="date" name="to_date" value="{{ to_date }}" class="form-control form-control-sm">
+    </div>
+    <div class="col-md-2 d-flex gap-1">
+      <button class="btn btn-primary btn-sm flex-grow-1"><i class="fas fa-search me-1"></i>Search</button>
+      {% if q or from_date or to_date %}
+      <a href="{{ url_for('reports.distributor_history') }}" class="btn btn-outline-secondary btn-sm"><i class="fas fa-times"></i></a>
+      {% endif %}
+    </div>
+  </form>
+</div>
+
+<!-- Summary Bar -->
+<div class="row g-2 mb-3">
+  <div class="col-md-4">
+    <div class="card border-0 shadow-sm text-center p-3" style="background:linear-gradient(135deg,#2980b9,#1a6fa0); color:#fff">
+      <div class="fw-bold fs-3">{{ distributors|length }}</div>
+      <div style="font-size:12px; opacity:.9">Distributors Found</div>
+    </div>
+  </div>
+  <div class="col-md-4">
+    <div class="card border-0 shadow-sm text-center p-3" style="background:linear-gradient(135deg,#27ae60,#1e8449); color:#fff">
+      <div class="fw-bold fs-3">{{ distributors|sum(attribute='total_txns') }}</div>
+      <div style="font-size:12px; opacity:.9">Total Transactions</div>
+    </div>
+  </div>
+  <div class="col-md-4">
+    <div class="card border-0 shadow-sm text-center p-3" style="background:linear-gradient(135deg,#e67e22,#ca6f1e); color:#fff">
+      <div class="fw-bold fs-3">{{ distributors|sum(attribute='total_qty') }}</div>
+      <div style="font-size:12px; opacity:.9">Total Qty Issued</div>
+    </div>
+  </div>
+</div>
+
+<!-- Distributor List -->
+<div class="table-card">
+  <div class="card-header">
+    <h6 class="card-title mb-0"><i class="fas fa-list me-2"></i>Distributors ({{ distributors|length }})</h6>
+  </div>
+  <div class="table-responsive">
+    <table class="table inv-table mb-0">
+      <thead><tr>
+        <th>#</th>
+        <th>Name</th>
+        <th>Employee ID</th>
+        <th>Phone</th>
+        <th>Department</th>
+        <th>Total Transactions</th>
+        <th>Total Qty Issued</th>
+        <th>Last Issue Date</th>
+        <th class="no-print">Action</th>
+      </tr></thead>
+      <tbody>
+        {% for d in distributors %}
+        <tr>
+          <td>{{ loop.index }}</td>
+          <td><strong>{{ d.name }}</strong></td>
+          <td>{{ d.employee_id or '<span class="text-muted">—</span>'|safe }}</td>
+          <td>{{ d.phone or '<span class="text-muted">—</span>'|safe }}</td>
+          <td>{{ d.department or '<span class="text-muted">—</span>'|safe }}</td>
+          <td><span class="badge bg-primary">{{ d.total_txns }}</span></td>
+          <td><span class="badge bg-warning text-dark">{{ d.total_qty }}</span></td>
+          <td>{{ d.last_date.strftime('%d %b %Y') if d.last_date else '—' }}</td>
+          <td class="no-print">
+            <a href="{{ url_for('reports.distributor_detail') }}?name={{ d.name | urlencode }}"
+               class="btn btn-sm btn-outline-primary">
+              <i class="fas fa-eye me-1"></i>View History
+            </a>
+          </td>
+        </tr>
+        {% else %}
+        <tr><td colspan="9" class="text-center text-muted py-5">
+          <i class="fas fa-users fa-2x mb-2 d-block opacity-25"></i>
+          No distributors found. Add distribution records first.
+        </td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endblock %}
